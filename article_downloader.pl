@@ -27,12 +27,14 @@ use LWP::UserAgent;
 # VARIABLES 
 #********************************************************************************
 
-die "You have to introduce 1 file with PMIDs!\n" if (@ARGV != 1);
-my $file = shift @ARGV;
+die "You have to introduce 1 file with PMIDs!\n" 
+	if (@ARGV < 1);
+
+my $file  = shift @ARGV;
 my @PMIDs = "";
-my $ua = LWP::UserAgent->new();
-	$ua->agent('Mozilla/5.0');
-	$ua->timeout(30);
+my $ua    = LWP::UserAgent->new();
+		  $ua->agent('Mozilla/5.0');
+		  $ua->timeout(30);
 
 #********************************************************************************
 # MAIN LOOP 
@@ -112,7 +114,6 @@ sub MEDLINE_download($) {
 		close(MEDLINE);
 
 		print STDERR "Saved as $ID.medline.\n\n";
-
 		&medline_to_tabular(\$MEDLINE, $ID);
 
 	}; # foreach
@@ -132,12 +133,12 @@ sub MEDLINE_download($) {
 
 sub medline_to_tabular($$) {
 	
-	my $MEDLINE = shift @_; # remember $MEDLINE is a reference to the actual text!
-	my $PMID = shift @_;
-	my @medline_lines = split (/\n/, $$MEDLINE);
-	my $previouskey = "nothing yet";
+	my $MEDLINE          = shift @_; # remember $MEDLINE is a reference to the actual text!
+	my $PMID             = shift @_;
+	my @medline_lines    = split (/\n/, $$MEDLINE);
+	my $previouskey      = "nothing yet";
 	my @interesting_keys = qw (AB FAU JT PMC);
-	my %data = map {$_, "-"} @interesting_keys;
+	my %data             = map {$_, "-"} @interesting_keys;
 
 	foreach my $line (@medline_lines) {
 
@@ -146,7 +147,7 @@ sub medline_to_tabular($$) {
 		next if (substr ($line, 0, 1) eq "<");
 		
 		my @columns = split /\s+/, $line;
-		my $key = $columns[0];
+		my $key     = $columns[0];
 		
 		if ($key eq "AB" or $previouskey eq "AB" and substr ($line, 0, 1) =~ /\s/) {
 		
@@ -155,8 +156,8 @@ sub medline_to_tabular($$) {
 		
 		} elsif (exists $data{$key}) {
 			
-			my $field = join ' ', @columns[1..$#columns];
-			$field =~ s/ /_/g;
+			my $field   = join ' ', @columns[1..$#columns];
+			$field      =~ s/ /_/g;
 			$data{$key} = $field;
 
 		} # if 
@@ -202,36 +203,43 @@ sub article_downloader {
 	while (<TBL>) {
 		
 		my ($PMID, $autor, $journal, $PMC, @abstract) = split /\t/, $_; 
-		$autor =~ s/,//; #delete commas
+		$autor =~ s/[^A-Z0-9_]//ig; #delete commas
 
 		if ($PMC =~ m/-/) {
 
-			print STDERR "\nSaving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
+			print STDERR "\n# $PMID:\nSaving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
 			open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
 			print ABS "@abstract\n";
 
 		} else {
 		
-			print STDERR "\nDownloading $PMID epub...\n";		
-			my $url = "http://www.ncbi.nlm.nih.gov/pmc/articles/${PMC}/epub";
+			print STDERR "\n#$PMID:\nDownloading $PMID epub...\n";		
+			my $url      = "http://www.ncbi.nlm.nih.gov/pmc/articles/${PMC}/epub";
 			my $response = $ua->get($url);
-			my $content = $response->decoded_content;
+			my $content  = $response->decoded_content;
 
 			no warnings;
 			
 			open my $fh, ">", "epubs/PMID_${PMID}_${autor}.epub";
 			
 			print {$fh} $content;
+
+			open (ABS, ">epubabs/PMID_${PMID}_${autor}_abstract.txt");
+			print ABS "@abstract\n";
 			
 			use warnings;
 
 			if ($response->is_success) {
 
-				print STDERR"epub saved as PMID_${PMID}_${autor}.epub at 'epubs/'\n" if $response->is_success;
+				print STDERR"epub saved as PMID_${PMID}_${autor}.epub at 'epubs/'\n";
+				print STDERR"abstract saved as PMID_${PMID}_${autor}_abstract.txt at 'epubabs/'\n";
 
 			} else {
 
 				print STDERR"Can't download PMID_${PMID}_${autor}.epub! (probably not available at PMC)\n";
+				print STDERR "Don't worry! Saving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
+				open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
+				print ABS "@abstract\n";
 			
 			}
 			
