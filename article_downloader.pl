@@ -3,8 +3,8 @@
 # Article_downloader.pl - This script takes a list of PMIDs and downloads medline 
 #                         records foreach one. Then, it creates a tabular file that
 #						  contains useful information from the medline records. 
-#                         Finally, it downloads the corresponding PMC articles 
-#                         or PubMed abstracts (if the epub is not available).
+#                         Finally, it downloads the corresponding PubMed abstracts 
+#                         and PubMedCentral articles (if available at PMC).
 #
 #			Arguments: 	  A file with PMIDs
 #
@@ -21,20 +21,26 @@ use warnings;
 use strict;
 use LWP::Simple;
 use LWP::UserAgent;
+use Getopt::Std;
 
 
 #********************************************************************************
 # VARIABLES 
 #********************************************************************************
 
-die "You have to introduce 1 file with PMIDs!\n" 
-	if (@ARGV < 1);
+my %options = ();
+getopts("af", \%options);
+	# -a : download only abstracts
+	# -f : force download of all PMIDs (even already downloaded ones)
 
-my $file  = shift @ARGV;
-my @PMIDs = "";
-my $ua    = LWP::UserAgent->new();
-		  $ua->agent('Mozilla/5.0');
-		  $ua->timeout(30);
+
+my $file    = shift @ARGV;
+my $abs     = 0;
+my @PMIDs   = "";
+my $ua      = LWP::UserAgent->new();
+		    $ua->agent('Mozilla/5.0');
+		    $ua->timeout(30);
+
 
 #********************************************************************************
 # MAIN LOOP 
@@ -47,10 +53,16 @@ open (TAB, "> medline.tbl"); # This erases medline.tbl if it exists.
 close (TAB);
 
 @PMIDs = &read_PMID(\$file);
+
+&filter_ids(\@PMIDs) unless ($options{f});
+
 &MEDLINE_download(\@PMIDs);
+
 print STDERR "\n####\n#### MEDLINE INFO SAVED AS MEDLINE.tbl\n####\n";
 print STDERR "\n####\n#### STARTING EPUBS AND ABSTRACTS DOWNLOAD...\n####\n";
-&article_downloader;
+
+&article_downloader(\%options);
+
 print STDERR "####\n#### PROGRAM FINISHED.\n\n";
 
 
@@ -59,15 +71,7 @@ print STDERR "####\n#### PROGRAM FINISHED.\n\n";
 #********************************************************************************
 
 #********************************************************************************
-# read_PMID()
-#
-# Arguments: a reference to a scalar with a file name 
-#
-# Returns: an array with PMIDs in the file
-#
-#
-
-sub read_PMID($) {
+sub read_PMID {
 	
 	my $file = shift @_;  # remember $file is a reference!
 	my @PMIDs;
@@ -90,20 +94,44 @@ sub read_PMID($) {
 
 
 #********************************************************************************
-# MEDLINE_download()
-#
-# Arguments: a reference to an array with PMIDs 
-#
-# Returns: nothing, it downloads medline record foreach PMID
-#
-#
+sub filter_ids {
+	
+	my $id_array   = shift;
+	my %downloaded = ();
 
-sub MEDLINE_download($) {
+	open my $cmd, 'ls epubs/ abstracts/ epubabs/ |'
+		or die "Can't run ls command : $!\n";
+
+	while (<$cmd>) {
+		
+		chomp;
+		$downloaded{$1} = undef if (m/PMID_(\d+)_/g);
+
+	}
+
+	@$id_array = grep { !exists $downloaded{$_} } @$id_array;
+
+	return;
+
+} # filter_ids
+
+
+#********************************************************************************
+sub MEDLINE_download {
 
 	my $PMIDs = shift @_; # remember $PMIDs is a reference to the array!
+	my $i     = 0;
 	
 	foreach my $ID (@$PMIDs) {
 		
+		if ($i == 25) {
+			
+			print STDERR "Waiting 3 seconds... :-)\n\n";
+			sleep(3);
+			$i = 0;
+
+		} # i = 25
+
 		my $MEDLINE = get("http://www.ncbi.nlm.nih.gov/pubmed/$ID?report=medline&format=text");
 		print STDERR "Downloading $ID medline record...\n";
 		
@@ -115,6 +143,7 @@ sub MEDLINE_download($) {
 
 		print STDERR "Saved as $ID.medline.\n\n";
 		&medline_to_tabular(\$MEDLINE, $ID);
+		$i++;
 
 	}; # foreach
 
@@ -122,16 +151,7 @@ sub MEDLINE_download($) {
 
 
 #********************************************************************************
-# medline_to_tabular()
-#
-# Arguments: a reference to a scalar with medline record (string)
-#			 a scalar with a PMID
-#
-# Returns: nothing, it creates medline.tbl and appends medline data to it
-#
-#
-
-sub medline_to_tabular($$) {
+sub medline_to_tabular {
 	
 	my $MEDLINE          = shift @_; # remember $MEDLINE is a reference to the actual text!
 	my $PMID             = shift @_;
@@ -185,34 +205,33 @@ sub medline_to_tabular($$) {
 
 
 #********************************************************************************
-# article_downloader()
-#
-# Arguments: none			
-#
-# Returns: nothing, it reads medline.tbl and it downloads epub if the 
-#		   PMID has a PMCID, otherwise, saves abstract in plain txt 
-#		   
-#		   
-#
-#
-
 sub article_downloader {
 	
+	my $options_hsh = shift;
 	open (TBL, "medline.tbl") or die "\nCan't open tbl file...";
+	my $i = 0;
 
 	while (<TBL>) {
-		
+
 		my ($PMID, $autor, $journal, $PMC, @abstract) = split /\t/, $_; 
 		$autor =~ s/[^A-Z0-9_]//ig; #delete commas
 
-		if ($PMC =~ m/-/) {
+		if ($PMC =~ m/-/ or defined $options_hsh->{a}) {
 
 			print STDERR "\n# $PMID:\nSaving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
 			open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
 			print ABS "@abstract\n";
 
 		} else {
-		
+			
+			if ($i == 25) {
+			
+				print STDERR "Waiting 3 seconds... :-)\n\n";
+				sleep(3);
+				$i = 0;
+
+			} # i = 25
+
 			print STDERR "\n#$PMID:\nDownloading $PMID epub...\n";		
 			my $url      = "http://www.ncbi.nlm.nih.gov/pmc/articles/${PMC}/epub";
 			my $response = $ua->get($url);
@@ -233,6 +252,7 @@ sub article_downloader {
 
 				print STDERR"epub saved as PMID_${PMID}_${autor}.epub at 'epubs/'\n";
 				print STDERR"abstract saved as PMID_${PMID}_${autor}_abstract.txt at 'epubabs/'\n";
+				$i++;
 
 			} else {
 
@@ -241,9 +261,7 @@ sub article_downloader {
 				open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
 				print ABS "@abstract\n";
 			
-			}
-			
-			#ESTO FUNCIONA system("wget", "-nv", "-O", "epubs/PMID_${PMID}_${autor}.epub", "-U", "Mozilla", "http://www.ncbi.nlm.nih.gov/pmc/articles/${PMC}/epub") == 0 or print STDERR "Can't download $PMID epub\n";
+			}			
 	
 		} # if
 
