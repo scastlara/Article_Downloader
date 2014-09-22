@@ -22,7 +22,7 @@ use strict;
 use LWP::Simple;
 use LWP::UserAgent;
 use Getopt::Std;
-
+use Data::Dumper;
 
 #********************************************************************************
 # VARIABLES 
@@ -157,7 +157,7 @@ sub medline_to_tabular {
 	my $PMID             = shift @_;
 	my @medline_lines    = split (/\n/, $$MEDLINE);
 	my $previouskey      = "nothing yet";
-	my @interesting_keys = qw (AB FAU JT PMC);
+	my @interesting_keys = qw (AB DP FAU JT PMC);
 	my %data             = map {$_, "-"} @interesting_keys;
 
 	foreach my $line (@medline_lines) {
@@ -197,7 +197,7 @@ sub medline_to_tabular {
 	
 	open (TAB,">> medline.tbl") or die "Can't open medline.tbl!\n";
 		
-	print TAB "$PMID\t$data{FAU}\t$data{JT}\t$data{PMC}\t$data{AB}\n";
+	print TAB "$PMID\t$data{FAU}\t$data{DP}\t$data{JT}\t$data{PMC}\t$data{AB}\n";
 
 	close (TAB);
 
@@ -213,7 +213,7 @@ sub article_downloader {
 
 	while (<TBL>) {
 
-		my ($PMID, $autor, $journal, $PMC, @abstract) = split /\t/, $_; 
+		my ($PMID, $autor, $date, $journal, $PMC, @abstract) = split /\t/, $_; 
 		$autor =~ s/[^A-Z0-9_]//ig; #delete commas
 
 		if ($PMC =~ m/-/ or defined $options_hsh->{a}) {
