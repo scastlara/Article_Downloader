@@ -95,16 +95,13 @@ sub read_PMID {
 	
 	open (FILE, $$file) or die "Can't open PMID file!\n";
 	
-	while (<FILE>) {
-		
+	while (<FILE>) {	
 		chomp;
 		next if $_ !~ /\d/; # skips empty lines
 		push (@PMIDs, $_);	
-	
 	}; # while
 
-	close (FILE);
-	
+	close (FILE);	
 	return @PMIDs;
 
 }; # read_PMID
@@ -119,11 +116,9 @@ sub filter_ids {
 	open my $cmd, 'ls epubs/ abstracts/ epubabs/ |'
 		or die "Can't run ls command : $!\n";
 
-	while (<$cmd>) {
-		
+	while (<$cmd>) {	
 		chomp;
 		$downloaded{$1} = undef if (m/PMID_(\d+)_/g);
-
 	}
 
 	@$id_array = grep { !exists $downloaded{$_} } @$id_array;
@@ -141,27 +136,22 @@ sub MEDLINE_download {
 	
 	foreach my $ID (@$PMIDs) {
 		
-		if ($i == 25) {
-			
+		if ($i == 25) {	
 			print STDERR "Waiting 3 seconds... :-)\n\n";
 			sleep(3);
 			$i = 0;
-
 		} # i = 25
 
 		my $MEDLINE = get("http://www.ncbi.nlm.nih.gov/pubmed/$ID?report=medline&format=text");
-		print STDERR "Downloading $ID medline record...\n";
+		print STDERR "Downloading $ID medline record...\n";	
 		
-		open(MEDLINE, "> medline/${ID}.medline");
-		
-		print MEDLINE"$MEDLINE";
-		
+		open(MEDLINE, "> medline/${ID}.medline");	
+		print MEDLINE"$MEDLINE";	
 		close(MEDLINE);
 
 		print STDERR "Saved as $ID.medline.\n\n";
 		&medline_to_tabular(\$MEDLINE, $ID);
 		$i++;
-
 	}; # foreach
 
 }; # MEDLINE_download
@@ -178,7 +168,6 @@ sub medline_to_tabular {
 	my %data             = map {$_, "-"} @interesting_keys;
 
 	foreach my $line (@medline_lines) {
-
 		$line =~ s/-//g;
 		
 		next if (substr ($line, 0, 1) eq "<");
@@ -187,24 +176,17 @@ sub medline_to_tabular {
 		my $key     = $columns[0];
 		
 		if ($key eq "AB" or $previouskey eq "AB" and substr ($line, 0, 1) =~ /\s/) {
-		
 			$data{AB} = $data{AB} . " " . (join ' ', @columns[1..$#columns]);
-			chomp $data{AB};
-		
-		} elsif (exists $data{$key}) {
-			
+			chomp $data{AB};	
+		} elsif (exists $data{$key}) {		
 			my $field   = join ' ', @columns[1..$#columns];
 			$field      =~ s/ /_/g;
 			$data{$key} = $field;
-
 		} # if 
-		
-		# set current key as "previous" for the next iteration if condition
-		
-		if (substr ($line, 0, 1) !~ /\s/) {
-			
+
+		# set current key as "previous" for the next iteration if condition	
+		if (substr ($line, 0, 1) !~ /\s/) {	
 			$previouskey = $key;
-		
 		} # if
 		
 	} # foreach line
@@ -212,10 +194,8 @@ sub medline_to_tabular {
 	$data{AB} =~ s/-//g;
 	$data{AB} =~ s/^\s//; # remove first character
 	
-	open (TAB,">> medline.tbl") or die "Can't open medline.tbl!\n";
-		
+	open (TAB,">> medline.tbl") or die "Can't open medline.tbl!\n";	
 	print TAB "$PMID\t$data{FAU}\t$data{DP}\t$data{JT}\t$data{PMC}\t$data{AB}\n";
-
 	close (TAB);
 
 } # sub medline_to_tabular
@@ -229,24 +209,19 @@ sub article_downloader {
 	my $i = 0;
 
 	while (<TBL>) {
-
 		my ($PMID, $autor, $date, $journal, $PMC, @abstract) = split /\t/, $_; 
 		$autor =~ s/[^A-Z0-9_]//ig; #delete commas
 
 		if ($PMC =~ m/-/ or defined $options_hsh->{a}) {
-
 			print STDERR "\n# $PMID:\nSaving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
 			open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
 			print ABS "@abstract\n";
-
-		} else {
+		} else {	
 			
 			if ($i == 25) {
-			
 				print STDERR "Waiting 3 seconds... :-)\n\n";
 				sleep(3);
 				$i = 0;
-
 			} # i = 25
 
 			print STDERR "\n#$PMID:\nDownloading $PMID epub...\n";		
@@ -266,18 +241,14 @@ sub article_downloader {
 			use warnings;
 
 			if ($response->is_success) {
-
 				print STDERR"epub saved as PMID_${PMID}_${autor}.epub at 'epubs/'\n";
 				print STDERR"abstract saved as PMID_${PMID}_${autor}_abstract.txt at 'epubabs/'\n";
 				$i++;
-
 			} else {
-
 				print STDERR"Can't download PMID_${PMID}_${autor}.epub! (probably not available at PMC)\n";
 				print STDERR "Don't worry! Saving $PMID abstract as PMID_${PMID}_${autor}_abstract.txt...\n";
 				open (ABS, ">abstracts/PMID_${PMID}_${autor}_abstract.txt");
 				print ABS "@abstract\n";
-			
 			}			
 	
 		} # if
