@@ -1,4 +1,4 @@
-Article_Downloader
+Article Downloader
 ==================
 
 Script that downloads articles/abstracts from PubMed using a list of PMIDs.
@@ -26,4 +26,4 @@ Arguments:
 Options:
 	-a : download only abstracts
 	-f : skip the 'checking', it will download every article in 
-		 the list of PMIDs
+	     the list of PMIDs
