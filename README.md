@@ -4,7 +4,7 @@ Article Downloader
 Script that downloads articles/abstracts from PubMed using a list of PMIDs.
 
 
-article_downloader.pl
+**article_downloader.pl**
 
 This script reads a list of PMIDs and checks which of them
 are not downloaded yet. After that, it downloads medline records,
