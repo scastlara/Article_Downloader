@@ -42,7 +42,6 @@ Commands:
             *opt=-f* : force download of already downloaded files
             If you use both options at the same time (opt=-af) you will download all the abstracts (and not any epub) regardless of whether you have downloaded the abstracts before or not. 
 
- 
 
 	*make pdf* - process pdf files (creates raw, text_sentences and stats).
 	*make epub* - process epub files (creates raw, text_sentences and stats).
