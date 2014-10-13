@@ -28,3 +28,32 @@ and finally it downloads abstracts and epubs (if available at PMC)
 		-a : download only abstracts
 		-f : skip the 'checking', it will download every article in 
 		     the list of PMIDs
+
+**makefile**
+
+Commands:
+
+	make all - do everything
+
+	make download :
+        default: download abstracts (and epubs if possible) of ids in PMIDs.txt that have not been already downloaded.
+        Options:
+            opt=-a : download only abstracts
+            opt=-f : force download of already downloaded files
+            If you use both options at the same time (opt=-af) you will download all the abstracts (and not any epub) 		regardless of whether you have downloaded the abstracts before or not. 
+
+ 
+
+	make pdf - process pdf files (creates raw, text_sentences and stats).
+	make epub - process epub files (creates raw, text_sentences and stats).
+	make abstract - process abstracts (creates text_sentences and stats).
+	make epubabs - process abstracts of articles with a PMC id (creates text_sentences and stats). 
+
+ 
+	make cleanall - remove everything.
+	make cleantext -remove all intermediary text files (everything inside 'raw_text/' 'text_sentences/' 'stats/').
+	make cleanepub - remove epubs.
+	make cleanepubabs - remove abstracts from articles with PMC ids.
+	make cleanabstract - remove abstracts.
+	make cleanmedline - remove all medline records.
+	make cleanstats - remove all stat files. 
