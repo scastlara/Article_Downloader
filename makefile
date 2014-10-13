@@ -1,6 +1,7 @@
 ##
-## makefile - This makefile automates the download and the conversion to text of PMC articles
-##            and PubMed abstracts. It also automates the extraction of text from pdf articles.
+## makefile - 
+##	This makefile automates the download and the conversion to text of PMC articles
+##	and PubMed abstracts. It also automates the extraction of text from pdf articles.
 ##
 
 
