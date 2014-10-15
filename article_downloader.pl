@@ -1,10 +1,12 @@
 #!/usr/bin/perl
 #
-# Article_downloader.pl -
-#	This script takes a list of PMIDs and downloads medline
-#	records foreach one. Then, it creates a tabular file that
-#	contains useful information from the medline records.
-#	Finally, it downloads the corresponding PubMed abstracts
+#################################################################################
+#                               article_downloader.pl									#
+#################################################################################
+#
+#	This script takes a list of PMIDs and downloads medline records foreach one. 
+#	Then, it creates a tabular file that contains useful information from the 
+#	medline records. Finally, it downloads the corresponding PubMed abstracts
 #	and PubMedCentral articles (if available at PMC).
 #
 #		Arguments: 	  A file with PMIDs
