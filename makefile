@@ -240,3 +240,6 @@ cleanmedline:
 
 cleanstats:
 	/bin/rm -vf $(ROOTDIR)stats/*.stats core;
+
+cleangenes:
+	/bin/rm .vf $(ROOTDIR)mtches/*.mtches;
