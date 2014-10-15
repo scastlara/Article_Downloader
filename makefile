@@ -1,8 +1,34 @@
-##
-## makefile - 
-##	This makefile automates the download and the conversion to text of PMC articles
-##	and PubMed abstracts. It also automates the extraction of text from pdf articles.
-##
+#################################################################################
+#                               MAKEFILE							    		#
+#################################################################################
+#
+#	This makefile automates the download and the conversion to text of PMC articles
+#	and PubMed abstracts. It also automates the extraction of text from pdf articles.
+#	
+#	You can use options as follows:
+#		make <command> opt=-a
+#		make <command> opt=-f
+#		make <command> opt=-af
+#
+
+#********************************************************************************
+#        Copyright (C) 2014 - Sergio CASTILLO
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#********************************************************************************
+
 
 
 ## THIS IS THE DIRECTORY OF THE PROJECT
@@ -21,6 +47,7 @@ epubabsDIR = epubabs/
 rawDIR = raw_text/
 txtDIR = text_sentences/
 statsDIR = stats/
+mtchesDIR = mtches/
 
 # Programs
 EXTRACTOR = /home/compgen/users/scastillo/practicum/pdf_to_text_project/lapdftext/
@@ -52,13 +79,21 @@ RAW = $(patsubst $(pdfDIR)%.pdf,$(rawDIR)%_fullText.txt,$(PDF))
 TXT = $(patsubst $(pdfDIR)%.pdf,$(txtDIR)%.txt,$(PDF))
 STATS = $(patsubst $(pdfDIR)%.pdf,$(statsDIR)%.stats,$(PDF))
 
+# Full text: inside text_sentences/
+TXT_SENT = $(wildcard $(txtDIR)*.txt)
 
+# Tagged text: inside mtches/
+MTCHES = $(patsubst $(txtDIR)%.txt,$(mtchesDIR)%.mtches,$(TXT_SENT))
+
+# gene_finder arguments
+HUGO = ~/code/gene_synonyms/HUGO_synonyms.tbl
+STOP = ~/code/gene_synonyms/long_stopwords.txt
 
 # ******************************************************************************
 # WHAT DO YOU WANT TO DO?
 
 # Do everything
-all: $(ROOTDIR)medline.tbl $(TXTabs) $(STATSabs) $(RAW) $(TXT) $(STATS)  $(RAWepub) $(TXTepub) $(STATSepub) 
+all: $(ROOTDIR)medline.tbl $(TXTabs) $(STATSabs) $(RAW) $(TXT) $(STATS)  $(RAWepub) $(TXTepub) $(STATSepub) $(MTCHES)
 
 # Download abstracts or articles if possible (epubs)
 download: $(ROOTDIR)medline.tbl
@@ -74,6 +109,9 @@ abstract: $(TXTabs) $(STATSabs)
 
 # Process text from epub-abstracts
 epubabs: $(TXTepubabs) $(STATSepubabs)
+
+# Find genes
+genes: $(MTCHES)
 
 
 
@@ -161,6 +199,13 @@ $(statsDIR)%.stats: $(txtDIR)%.txt
 	$(BIN)text_stats.pl\
 	 $(ROOTDIR)$<\
 	 > $(ROOTDIR)$@
+
+# ******************************************************************************
+## FOR TAGGING GENES...
+genes:
+$(mtchesDIR)%.mtches: $(txtDIR)%.txt
+	@echo "\n### TAGGING GENES ..." 1>&2;
+	$(BIN)gene_finder.pl $(HUGO) $(STOP) $<;
 
 
 # ******************************************************************************
