@@ -90,7 +90,7 @@ HUGO = ~/code/gene_synonyms/HUGO_synonyms.tbl
 STOP = ~/code/gene_synonyms/long_stopwords.txt
 
 # ******************************************************************************
-# WHAT DO YOU WANT TO DO?
+# WHAT DO YOU WANT TO DO? COMMANDS
 
 # Do everything
 all: $(ROOTDIR)medline.tbl $(TXTabs) $(STATSabs) $(RAW) $(TXT) $(STATS)  $(RAWepub) $(TXTepub) $(STATSepub) $(MTCHES)
