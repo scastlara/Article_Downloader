@@ -3,12 +3,26 @@
 #################################################################################
 #
 #	This makefile automates the download and the conversion to text of PMC articles
-#	and PubMed abstracts. It also automates the extraction of text from pdf articles.
+#	and PubMed abstracts. It also automates the extraction of text from pdf articles, 
+#	the tagging of genes in text, and the creation of word clouds out of articles.
 #	
-#	You can use options as follows:
-#		make <command> opt=-a
-#		make <command> opt=-f
-#		make <command> opt=-af
+#	Usage:
+#		make <command>
+#			commands:
+#				- all : do everything
+#				- download : download abstracts or articles if possible (epubs)
+#				- pdf : extract text from pdfs
+#				- epub : extract text from epubs
+#				- epubabs : extract text from abstracts of articles with 
+#							epub available
+#				- genes : find genes in text
+#				- wc : create word clouds
+#
+#
+#		You can use options with 'make download' as follows:
+#			make download opt=-a	# download only abstracts
+#			make download opt=-f	# download already downloaded files
+#			make download opt=-af	# combination of -a and -f
 #
 
 #********************************************************************************
@@ -48,6 +62,7 @@ rawDIR = raw_text/
 txtDIR = text_sentences/
 statsDIR = stats/
 mtchesDIR = mtches/
+wcDIR = word_cloud/
 
 # Programs
 EXTRACTOR = /home/compgen/users/scastillo/practicum/pdf_to_text_project/lapdftext/
@@ -89,11 +104,18 @@ MTCHES = $(patsubst $(txtDIR)%.txt,$(mtchesDIR)%.mtches,$(TXT_SENT))
 HUGO = ~/code/gene_synonyms/HUGO_synonyms.tbl
 STOP = ~/code/gene_synonyms/long_stopwords.txt
 
+# Syntactic analysis
+PARSED = $(ROOTDIR)parsed.par
+
+# Word clouds
+WC = $(patsubst $(txtDIR)%.txt,$(wcDIR)%.png,$(TXT_SENT))
+
+
 # ******************************************************************************
 # WHAT DO YOU WANT TO DO? COMMANDS
 
 # Do everything
-all: $(ROOTDIR)medline.tbl $(TXTabs) $(STATSabs) $(RAW) $(TXT) $(STATS)  $(RAWepub) $(TXTepub) $(STATSepub) $(MTCHES)
+all: $(ROOTDIR)medline.tbl $(TXTabs) $(STATSabs) $(RAW) $(TXT) $(STATS)  $(RAWepub) $(TXTepub) $(STATSepub) $(MTCHES) $(WC)
 
 # Download abstracts or articles if possible (epubs)
 download: $(ROOTDIR)medline.tbl
@@ -113,7 +135,11 @@ epubabs: $(TXTepubabs) $(STATSepubabs)
 # Find genes
 genes: $(MTCHES)
 
+# Parse using the Stanford Parser
+parse: $(PARSED)
 
+# Word clouds
+wc: $(WC)
 
 # ******************************************************************************
 ## EPUB AND ABSTRACT DOWNLOAD...
@@ -203,10 +229,18 @@ $(statsDIR)%.stats: $(txtDIR)%.txt
 # ******************************************************************************
 ## FOR TAGGING GENES...
 genes:
+
 $(mtchesDIR)%.mtches: $(txtDIR)%.txt
 	@echo "\n### TAGGING GENES ..." 1>&2;
 	$(BIN)gene_finder.pl $(HUGO) $(STOP) $<;
 
+# ******************************************************************************
+## FOR CREATING WORD CLOUDS...
+wc:
+
+$(wcDIR)%.png: $(txtDIR)%.txt
+	@echo "\n### CREATING WORD CLOUDS ..." 1>&2;
+	$(BIN)word_cloud.pl $< ~/code/word_cloud/short_stopwords.txt
 
 # ******************************************************************************
 cleanall:
