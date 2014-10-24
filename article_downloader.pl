@@ -143,7 +143,7 @@ sub MEDLINE_download {
 			print STDERR "Waiting 3 seconds... :-)\n\n";
 			sleep(3);
 			$i = 0;
-		} # i = 25
+		} # i = 25 9895247
 
 		my $MEDLINE = get("http://www.ncbi.nlm.nih.gov/pubmed/$ID?report=medline&format=text");
 		print STDERR "Downloading $ID medline record...\n";
@@ -197,9 +197,16 @@ sub medline_to_tabular {
 	$data{AB} =~ s/-//g;
 	$data{AB} =~ s/^\s//; # remove first character
 
-	open (TAB,">> medline.tbl") or die "Can't open medline.tbl!\n";
-	print TAB "$PMID\t$data{FAU}\t$data{DP}\t$data{JT}\t$data{PMC}\t$data{AB}\n";
-	close (TAB);
+	if ($data{AB} =~ m/\w/g) {
+		open (TAB,">> medline.tbl") or die "Can't open medline.tbl!\n";
+		print TAB "$PMID\t$data{FAU}\t$data{DP}\t$data{JT}\t$data{PMC}\t$data{AB}\n";
+		close (TAB);	
+	} else {
+		open (DIS,">> discarded.tbl") or die "Can't open discarded.tbl!\n";
+		print STDERR "\n$PMID article discarded (abstract not available in medline record)\n\n";
+		print DIS "$PMID\t$data{FAU}\t$data{DP}\t$data{JT}\t$data{PMC}\tEMPTY\n";
+		close (DIS);
+	}
 
 } # sub medline_to_tabular
 
