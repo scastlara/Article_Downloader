@@ -52,8 +52,9 @@ my %options = ();
 getopts("afh", \%options);
 	# -a : download only abstracts
 	# -f : force download of all PMIDs (even already downloaded ones)
+	# -h : help
 
-if (defined $options{h}) {
+if (defined $options{h} or @ARGV == 0) {
 	print qq(
 ====================
 article_downloader.pl
