@@ -49,10 +49,37 @@ use Data::Dumper;
 #================================================================================
 
 my %options = ();
-getopts("af", \%options);
+getopts("afh", \%options);
 	# -a : download only abstracts
 	# -f : force download of all PMIDs (even already downloaded ones)
 
+if (defined $options{h}) {
+	print qq(
+====================
+article_downloader.pl
+====================
+This script takes a list of PMIDs and downloads medline records foreach one. 
+Then, it creates a tabular file that contains useful information from the 
+medline records. Finally, it downloads the corresponding PubMed abstracts
+and PubMedCentral articles (if available at PMC).
+
+		Arguments: 		A file with PMIDs
+						Options.
+
+ 		Requirements:	You need to run the code inside a folder that contains
+       			  		the following directories:
+						- epubs/
+						- abstracts/
+						- medline/
+
+		Options:		
+				-a : download only abstracts
+				-f : force download of all PMIDs (even already downloaded ones)
+
+);
+
+	exit(1);	
+}
 
 my $file    = shift @ARGV;
 my $abs     = 0;
@@ -144,7 +171,7 @@ sub MEDLINE_download {
 			sleep(3);
 			$i = 0;
 		} # i = 25 9895247
-
+		
 		my $MEDLINE = get("http://www.ncbi.nlm.nih.gov/pubmed/$ID?report=medline&format=text");
 		print STDERR "Downloading $ID medline record...\n";
 
