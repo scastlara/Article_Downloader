@@ -12,7 +12,7 @@ then it creates a tabular medline file (with information of each article)
 and finally it downloads abstracts and epubs (if available at PMC) 
 
 	Requirements:
-		- In order to work properly, the next following folder structure
+		- In order to work properly, the following folder structure
 		  has to be created first:
 
 		Article_analysis/
